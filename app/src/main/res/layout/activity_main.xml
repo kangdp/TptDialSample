@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    tools:context=".MainActivity">
+
+   <com.kdp.tptdial.TptDialView
+       android:layout_width="wrap_content"
+       android:layout_height="wrap_content"
+       app:TickMarkStartAngle="135"
+       app:TickMarkEndAngle="405"
+       app:TickMarkSpaceAngle="3"
+       app:TickMarkAngle="1"
+       app:TickMarkStartColor="#177ef7"
+       app:TickMarkEndColor="#12facc"
+       app:InnerRadius="200dp"
+       app:TickMarkHeight="50dp"
+       app:SelTickMarkHeight="90dp"
+       app:ThumbRadiu="20dp"
+       app:CurPosition="10"
+       />
+
+</RelativeLayout>

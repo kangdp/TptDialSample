@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <declare-styleable name="TptDialView">
+        <!--刻度盘内圆半径-->
+        <attr name="InnerRadius" format="dimension"/>
+        <!--刻度线高度-->
+        <attr name="TickMarkHeight" format="dimension"/>
+        <!--刻度线渐变的起始颜色-->
+        <attr name="TickMarkStartColor" format="color|reference"/>
+        <!--刻度线渐变的结束颜色-->
+        <attr name="TickMarkEndColor" format="color|reference"/>
+        <!--选中的刻度线高度-->
+        <attr name="SelTickMarkHeight" format="dimension"/>
+        <!--每个刻度的角度-->
+        <attr name="TickMarkAngle" format="integer"/>
+        <!--刻度之间的间隔角度-->
+        <attr name="TickMarkSpaceAngle" format="integer"/>
+        <!--刻度盘的起始角度-->
+        <attr name="TickMarkStartAngle" format="integer"/>
+        <!--刻度盘的结束角度-->
+        <attr name="TickMarkEndAngle" format="integer"/>
+        <!--当前刻度指针的位置-->
+        <attr name="CurPosition" format="integer"/>
+        <!--thumb半径-->
+        <attr name="ThumbRadiu" format="dimension"/>
+        <!--thumb颜色-->
+        <attr name="ThumbColor" format="color|reference"/>
+        <!--thumb边框宽度-->
+        <attr name="ThumbStrokeWidth" format="dimension"/>
+        <!--thumb边框颜色-->
+        <attr name="ThumbStrokeColor" format="color|reference"/>
+    </declare-styleable>
+
+
+
+</resources>
