@@ -7,19 +7,32 @@
     tools:context=".MainActivity">
 
    <com.kdp.tptdial.TptDialView
+       android:id="@+id/tptdial"
        android:layout_width="wrap_content"
        android:layout_height="wrap_content"
-       app:TickMarkStartAngle="135"
-       app:TickMarkEndAngle="405"
-       app:TickMarkSpaceAngle="3"
-       app:TickMarkAngle="1"
-       app:TickMarkStartColor="#177ef7"
+       android:layout_centerInParent="true"
+       android:background="@android:color/darker_gray"
+       app:CurPosition="0"
+       app:InnerRadius="80dp"
+       app:SelTickMarkHeight="70dp"
+       app:TickMarkAngle="0.5"
        app:TickMarkEndColor="#12facc"
-       app:InnerRadius="200dp"
-       app:TickMarkHeight="50dp"
-       app:SelTickMarkHeight="90dp"
-       app:ThumbRadiu="20dp"
-       app:CurPosition="10"
-       />
+       app:TickMarkHeight="40dp"
+       app:TickMarkSpaceAngle="20"
+       app:TickMarkStartAngle="135"
+       app:TickMarkStartColor="#177ef7"
+       app:TickMarkSweepAngle="270"
+       app:Thumb="@mipmap/xiangqing9"/>
+
+
+   <SeekBar
+       android:id="@+id/seekbar"
+       android:layout_width="match_parent"
+       android:layout_height="wrap_content"
+       android:layout_alignParentBottom="true"
+       android:layout_marginBottom="100dp"
+       android:layout_marginLeft="10dp"
+       android:layout_marginRight="10dp"
+       android:max="100"/>
 
 </RelativeLayout>
