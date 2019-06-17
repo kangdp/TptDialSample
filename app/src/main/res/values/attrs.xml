@@ -22,7 +22,12 @@
         <attr name="TickMarkSweepAngle" format="integer"/>
         <!--当前刻度指针的位置-->
         <attr name="CurPosition" format="integer"/>
+        <!--指针上的thumb-->
         <attr name="Thumb" format="reference"/>
+        <!--最小数值-->
+        <attr name="MinValue" format="float"/>
+        <!--最大数值-->
+        <attr name="MaxValue" format="float"/>
     </declare-styleable>
 
 
