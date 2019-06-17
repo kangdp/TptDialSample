@@ -7,9 +7,9 @@
         <!--刻度线高度-->
         <attr name="TickMarkHeight" format="dimension"/>
         <!--刻度线渐变的起始颜色-->
-        <attr name="TickMarkStartColor" format="color|reference"/>
+        <attr name="TickMarkStartColor" format="color"/>
         <!--刻度线渐变的结束颜色-->
-        <attr name="TickMarkEndColor" format="color|reference"/>
+        <attr name="TickMarkEndColor" format="color"/>
         <!--选中的刻度线高度-->
         <attr name="SelTickMarkHeight" format="dimension"/>
         <!--每个刻度的角度-->
@@ -23,12 +23,20 @@
         <!--当前刻度指针的位置-->
         <attr name="CurPosition" format="integer"/>
         <!--指针上的thumb-->
-        <attr name="Thumb" format="reference"/>
+        <attr name="ThumbRadius" format="dimension"/>
+        <attr name="ThumbColor" format="color"/>
+        <attr name="ThumbStrokeWidth" format="dimension"/>
+        <attr name="ThumbStrokeColor" format="color"/>
+        <attr name="ThumbShadowColor" format="color"/>
+        <attr name="ThumbShadowRadius" format="dimension"/>
+        <!--虚线颜色-->
+        <attr name="DottedColor" format="color"/>
         <!--最小数值-->
         <attr name="MinValue" format="float"/>
         <!--最大数值-->
         <attr name="MaxValue" format="float"/>
     </declare-styleable>
+
 
 
 

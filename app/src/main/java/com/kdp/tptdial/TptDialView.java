@@ -1,18 +1,15 @@
 package com.kdp.tptdial;
-
 import android.animation.ArgbEvaluator;
 import android.content.Context;
 import android.content.res.TypedArray;
-import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.DashPathEffect;
 import android.graphics.Paint;
-import android.graphics.Rect;
+import android.graphics.Path;
+import android.graphics.PathEffect;
 import android.graphics.RectF;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -60,17 +57,23 @@ public class TptDialView extends View {
      */
     private int mTickMarkSpaceAngle;
 
-    private Bitmap thumbBitmap;
-
-    /**
-     * thumb 宽高
-     */
-    private int mThumbWidth,mThumbHeight;
-
     /**
      * 总刻度数量
      */
     private int mTickMarkCount;
+    /**
+     * Thumb属性
+     */
+    private float mThumbRadius;
+    private int mThumbColor;
+    private float mThumbStrokeWidth;
+    private int mThumbStrokeColor;
+    private int mThumbShadowColor;
+    private float mThumbShadowRadius;
+    /**
+     * 虚线颜色
+     */
+    private int mDottedColor;
 
     /**
      * 实现颜色渐变过渡的类
@@ -85,6 +88,11 @@ public class TptDialView extends View {
      * 刻度指针外接矩形
      */
     private RectF mSelRectangle;
+
+    /**
+     * 虚线外接矩形
+     */
+    private RectF mDottedRectangle;
 
     /**
      * 当前刻度指针的位置 (介于 0 -> 总刻度数量 - 1)
@@ -118,10 +126,13 @@ public class TptDialView extends View {
         mTickMarkSpaceAngle = typedArray.getInt(R.styleable.TptDialView_TickMarkSpaceAngle,0);
         mTickMarkStartAngle = typedArray.getInt(R.styleable.TptDialView_TickMarkStartAngle,0);
         mTickMarkSweepAngle = typedArray.getInt(R.styleable.TptDialView_TickMarkSweepAngle, 0);
-        /**
-         * thumb
-         */
-        Drawable mThumbDrawable = typedArray.getDrawable(R.styleable.TptDialView_Thumb);
+        mThumbRadius = typedArray.getDimension(R.styleable.TptDialView_ThumbRadius,0);
+        mThumbColor = typedArray.getColor(R.styleable.TptDialView_ThumbColor,0x000);
+        mThumbStrokeWidth = typedArray.getDimension(R.styleable.TptDialView_ThumbStrokeWidth,0);
+        mThumbStrokeColor = typedArray.getColor(R.styleable.TptDialView_ThumbStrokeColor,0x000);
+        mThumbShadowColor = typedArray.getColor(R.styleable.TptDialView_ThumbShadowColor,0xFFF);
+        mThumbShadowRadius = typedArray.getDimension(R.styleable.TptDialView_ThumbShadowRadius,0);
+        mDottedColor = typedArray.getColor(R.styleable.TptDialView_DottedColor,0x000);
         mCurrentPosition = typedArray.getInt(R.styleable.TptDialView_CurPosition,0);
         mMinValue = typedArray.getFloat(R.styleable.TptDialView_MinValue,0);
 
@@ -131,22 +142,27 @@ public class TptDialView extends View {
         checkDialValue();
         //回收资源
         typedArray.recycle();
-        //初始化画笔
-        initPaint();
-
-        if (mThumbDrawable != null){
-            thumbBitmap = ((BitmapDrawable) mThumbDrawable).getBitmap();
-            mThumbWidth = thumbBitmap.getWidth();
-            mThumbHeight = thumbBitmap.getHeight();
-        }
-        //初始化颜色渐变类
-        argbEvaluator = new ArgbEvaluator();
 
         if (mCurrentPosition < 0)
             mCurrentPosition = 0;
         if (mCurrentPosition > mTickMarkCount - 1){
             throw new IndexOutOfBoundsException("The current position is out of bounds");
         }
+
+        if (mThumbRadius <= 0){
+            mThumbRadius = 0;
+            mThumbShadowRadius = 0;
+            mThumbStrokeWidth = 0;
+        }
+        if (mThumbShadowRadius > 0){
+            setLayerType(LAYER_TYPE_SOFTWARE, null);
+        }
+
+        //初始化画笔
+        initPaint();
+
+        //初始化颜色渐变类
+        argbEvaluator = new ArgbEvaluator();
     }
 
     /**
@@ -179,18 +195,16 @@ public class TptDialView extends View {
         if (mSelRectangle == null){
             mSelRectangle = new RectF();
         }
-        left =  (int) (mSelTickMarkHeight - mTickMarkHeight);
+
+        if (mDottedRectangle == null){
+            mDottedRectangle = new RectF();
+        }
+        left =  (int) (mSelTickMarkHeight - mTickMarkHeight + mThumbRadius * 2 + mThumbShadowRadius);
         width = w - left * 2;
         mRectangle.set(left,left,left+width,left+width);
-
-        mSelRectangle.set(0,0,w,h);
-
-
-        Log.e(TAG, "onMeasure: width = " + w );
-        Log.e(TAG, "onMeasure: tickMarkWidth = " + mSelTickMarkHeight * 2);
-        Log.e(TAG, "onMeasure: thumbWidth = " + mThumbWidth );
-        Log.e(TAG, "onMeasure: innerWidth = " + mInnerRadius*2);
-
+        mSelRectangle.set(mThumbRadius*2 + mThumbShadowRadius,mThumbRadius*2 + mThumbShadowRadius,w-mThumbShadowRadius-mThumbRadius * 2,h-mThumbShadowRadius-mThumbRadius * 2);
+        int dottedLeft = (int) (w/2 - mInnerRadius + mInnerRadius / 5);
+        mDottedRectangle.set(dottedLeft,dottedLeft,getWidth() - dottedLeft,getHeight() - dottedLeft);
     }
 
 
@@ -204,21 +218,9 @@ public class TptDialView extends View {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        int width = MeasureSpec.getSize(widthMeasureSpec);
-        int widthMode = MeasureSpec.getMode(widthMeasureSpec);
-        int height = MeasureSpec.getSize(heightMeasureSpec);
-        int heightMode = MeasureSpec.getMode(heightMeasureSpec);
-//        if (widthMode == MeasureSpec.AT_MOST && heightMode == MeasureSpec.AT_MOST){
-//            //重新计算圆盘的尺寸
-//         width = height = Math.round((mSelTickMarkHeight + mInnerRadius + mThumbRadius*2) * 2);
-//        }else {
-//            //取最小长度为圆盘的尺寸
-//            width = height = Math.min(width,height);
-//        }
-        width = height = (int) (mSelTickMarkHeight + mInnerRadius) * 2;
+        int width,height;
+        width = height = (int) (mSelTickMarkHeight + mInnerRadius +mThumbRadius*2 + mThumbShadowRadius) * 2;
         setMeasuredDimension(width,height);
-
-
     }
 
     @Override
@@ -229,11 +231,34 @@ public class TptDialView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         canvas.save();
-//        canvas.drawColor(Color.GRAY);
         //绘制所有刻度
         drawAllTickMarks(canvas);
         //绘制内圆
         drawInnerCircle(canvas);
+        //绘制园内虚线
+        drawDottedArc(canvas);
+    }
+
+    /**
+     * 绘制圆弧虚线
+     * @param canvas
+     */
+    private void drawDottedArc(Canvas canvas) {
+        canvas.restore();
+        if (mTickMarkSweepAngle < 360){
+            //裁剪需要绘制虚线的部分
+            Path clipPath = new Path();
+            clipPath.addArc(mDottedRectangle,mTickMarkStartAngle,mTickMarkSweepAngle);
+            canvas.clipPath(clipPath);
+        }
+        //绘制虚线圆
+        PathEffect dashPathEffect = new DashPathEffect(new float[]{10,20},0);
+        mPaint.setPathEffect(dashPathEffect);
+        mPaint.setStyle(Paint.Style.STROKE);
+        mPaint.setStrokeWidth(2);
+        mPaint.setColor(mDottedColor);
+        canvas.drawCircle(getWidth() * 0.5f,getHeight() * 0.5f,mDottedRectangle.width() / 2,mPaint);
+
     }
 
     /**
@@ -259,11 +284,9 @@ public class TptDialView extends View {
      * @param canvas
      */
     private void drawAllTickMarks(Canvas canvas) {
-        canvas.restore();
         canvas.rotate(mTickMarkStartAngle % 360,getWidth() * 0.5f,getHeight() * 0.5f);
         mPaint.setStyle(Paint.Style.FILL);
         canvas.drawArc(mRectangle,-mTickMarkAngle/2,mTickMarkAngle,true,mPaint);
-//        canvas.drawArc(mRectangle,-15,30,true,mPaint);
         //先绘制开始和结束位置的刻度线
         for (int i = 0;i < mTickMarkCount;i++){
             mPaint.setColor(getTickMarkColor(i));
@@ -273,14 +296,45 @@ public class TptDialView extends View {
             if (i == mCurrentPosition){
                 //绘制刻度指针
                 canvas.drawArc(mSelRectangle,-mTickMarkAngle/2,mTickMarkAngle,true,mPaint);
-                int left =  getWidth() - mThumbWidth;
-                int top = (getHeight() - mThumbHeight) / 2;
-                canvas.drawBitmap(thumbBitmap,null,new RectF(left,top,getWidth(),top+mThumbHeight),mPaint);
+                //绘制thumb
+                drawThumb(canvas);
             }else {
                 //绘制所有刻度
                 canvas.drawArc(mRectangle,-mTickMarkAngle/2,mTickMarkAngle,true,mPaint);
             }
         }
+    }
+
+    /**
+     * 绘制Thumb
+     * @param canvas
+     */
+    private void drawThumb(Canvas canvas) {
+        if (mThumbRadius > 0) {
+            if (mThumbShadowRadius > 0){
+                //绘制阴影
+                mPaint.setShadowLayer(mThumbShadowRadius,0,0,mThumbShadowColor);
+            }
+
+            //绘制实心圆
+            mPaint.setStyle(Paint.Style.FILL);
+            mPaint.setColor(mThumbColor);
+            canvas.drawCircle(getWidth()-mThumbRadius-mThumbShadowRadius,getHeight() * 0.5f,mThumbRadius - mThumbStrokeWidth,mPaint);
+
+            mPaint.clearShadowLayer();
+            if (mThumbStrokeWidth > 0){
+                //绘制边框
+                mPaint.setStyle(Paint.Style.STROKE);
+                mPaint.setStrokeWidth(mThumbStrokeWidth);
+                mPaint.setColor(mThumbStrokeColor);
+                canvas.drawCircle(getWidth()-mThumbRadius-mThumbShadowRadius,getHeight() * 0.5f,mThumbRadius,mPaint);
+            }
+
+            mPaint.setStyle(Paint.Style.FILL);
+
+        }
+
+
     }
 
     @Override
@@ -304,17 +358,15 @@ public class TptDialView extends View {
                    }
               }
           }
-          Log.e(TAG, "calculatePointAngle: x = " + downX  + " " + "y = " + downY + "     degree = " + degree);
-          Log.e(TAG, "calculatePointAngle: position = " + mCurrentPosition);
       }
         return true;
     }
 
     /**
      * 计算触摸点到原点的直线与三点中方向的夹角
-     * @param downX
-     * @param downY
-     * @param distance
+     * @param downX 触摸点x坐标
+     * @param downY 触摸点y坐标
+     * @param distance 触摸点与圆心的距离
      */
     private int calculatePointAngle(float downX, float downY,float distance) {
         float trigleValue;
@@ -369,7 +421,7 @@ public class TptDialView extends View {
     private void drawInnerCircle(Canvas canvas) {
         mPaint.setStyle(Paint.Style.FILL);
         mPaint.setColor(Color.WHITE);
-        canvas.drawCircle(getWidth()/2F,getHeight()/2F,getWidth()/2f-mSelTickMarkHeight,mPaint);
+        canvas.drawCircle(getWidth()/2F,getHeight()/2F,getWidth()/2f-mSelTickMarkHeight-mThumbRadius*2-mThumbShadowRadius,mPaint);
     }
 
     /**

@@ -11,14 +11,12 @@ public class MainActivity extends AppCompatActivity {
     TptDialView tptDialView;
 //    SeekBar seekBar;
     private TextView tvValue,tv_min,tv_max;
-    private ImageView imageView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         tptDialView = findViewById(R.id.tptdial);
-        imageView =findViewById(R.id.image);
 
         tvValue = findViewById(R.id.tv_value);
         tv_min = findViewById(R.id.tv_min);
@@ -33,13 +31,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        imageView.post(new Runnable() {
-            @Override
-            public void run() {
-                Log.e(MainActivity.class.getSimpleName(), "onCreate: imageWidth = " + imageView.getWidth());
-                Log.e(MainActivity.class.getSimpleName(), "onCreate: imageWidth = " + imageView.getHeight());
-            }
-        });
 
 
 //        seekBar = findViewById(R.id.seekbar);
