@@ -16,9 +16,9 @@
         <attr name="TickMarkAngle" format="float"/>
         <!--刻度之间的间隔角度-->
         <attr name="TickMarkSpaceAngle" format="integer"/>
-        <!--刻度盘的起始角度-->
+        <!--刻度盘的起始角度 注意：该值必须大于0-->
         <attr name="TickMarkStartAngle" format="integer"/>
-        <!--所有刻度扫过的角度-->
+        <!--所有刻度扫过的角度 注意：该值必须大于0-->
         <attr name="TickMarkSweepAngle" format="integer"/>
         <!--当前刻度指针的位置-->
         <attr name="CurPosition" format="integer"/>

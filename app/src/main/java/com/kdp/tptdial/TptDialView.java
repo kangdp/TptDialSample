@@ -48,6 +48,8 @@ public class TptDialView extends View {
      * 绘制刻度的开始角度
      */
     private int mTickMarkStartAngle;
+
+    private int mTickMarkEndAngle;
     /**
      * 所有刻度扫过的角度
      */
@@ -143,19 +145,11 @@ public class TptDialView extends View {
         mDottedColor = typedArray.getColor(R.styleable.TptDialView_DottedColor,0x000);
         mCurrentPosition = typedArray.getInt(R.styleable.TptDialView_CurPosition,0);
         mMinValue = typedArray.getFloat(R.styleable.TptDialView_MinValue,0);
-
-        //计算总刻度数量
-        mTickMarkCount = (int) ((mTickMarkSweepAngle - mTickMarkAngle) / (mTickMarkAngle + mTickMarkSpaceAngle)) + 1;
-        mMaxValue = typedArray.getFloat(R.styleable.TptDialView_MaxValue,mTickMarkCount - 1);
-        checkDialValue();
+        mMaxValue = typedArray.getFloat(R.styleable.TptDialView_MaxValue,0);
         //回收资源
         typedArray.recycle();
 
-        if (mCurrentPosition < 0)
-            mCurrentPosition = 0;
-        if (mCurrentPosition > mTickMarkCount - 1){
-            throw new IndexOutOfBoundsException("The current position is out of bounds");
-        }
+        computeTickMarkCount();
 
         if (mThumbRadius <= 0){
             mThumbRadius = 0;
@@ -174,6 +168,21 @@ public class TptDialView extends View {
     }
 
     /**
+     * 计算总刻度数量
+     */
+    private void computeTickMarkCount(){
+        mTickMarkCount = (int) ((mTickMarkSweepAngle - mTickMarkAngle) / (mTickMarkAngle + mTickMarkSpaceAngle)) + 1;
+        checkDialValue();
+        if (mCurrentPosition < 0)
+            mCurrentPosition = 0;
+        if (mCurrentPosition > mTickMarkCount - 1){
+            throw new IndexOutOfBoundsException("The current position is out of bounds");
+        }
+        mTickMarkStartAngle = mTickMarkStartAngle % 360;
+        mTickMarkEndAngle = mTickMarkStartAngle + mTickMarkSweepAngle;
+    }
+
+    /**
      * 检查数值的合法性
      */
     private void checkDialValue() {
@@ -184,16 +193,7 @@ public class TptDialView extends View {
         mAverageValue = (mMaxValue - mMinValue) / mTickMarkCount;
     }
 
-    /**
-     * 设置数值
-     * @param minValue 最小值
-     * @param maxValue 最大值
-     */
-    public void setDialValue(float minValue,float maxValue){
-        this.mMinValue = minValue;
-        this.mMaxValue = maxValue;
-        checkDialValue();
-    }
+
 
     private void computeRectangle(int w,int h) {
         int left,width;
@@ -269,22 +269,7 @@ public class TptDialView extends View {
 
     }
 
-    /**
-     * 设置当前刻度指针的位置
-     * @param index
-     */
-    public void setCurPosition(int index){
-        mCurrentPosition = index;
-        notifyDataChanged();
-    }
 
-    public float getMaxValue(){
-        return mMaxValue;
-    }
-
-    public float getMinValue(){
-        return mMinValue;
-    }
 
 
     /**
@@ -292,7 +277,7 @@ public class TptDialView extends View {
      * @param canvas
      */
     private void drawAllTickMarks(Canvas canvas) {
-        canvas.rotate(mTickMarkStartAngle % 360,getWidth() * 0.5f,getHeight() * 0.5f);
+        canvas.rotate(mTickMarkStartAngle,getWidth() * 0.5f,getHeight() * 0.5f);
         mPaint.setStyle(Paint.Style.FILL);
         canvas.drawArc(mRectangle,-mTickMarkAngle/2,mTickMarkAngle,true,mPaint);
         //先绘制开始和结束位置的刻度线
@@ -361,7 +346,12 @@ public class TptDialView extends View {
                 }
                 if (mSlidable) {
                     //触摸点在刻度盘上的位置
-                    mCurrentPosition = (int) ((degree - mTickMarkStartAngle - mTickMarkAngle) / (mTickMarkAngle + mTickMarkSpaceAngle));
+                    if (degree >= mTickMarkStartAngle){
+                        mCurrentPosition = (int) ((degree - mTickMarkStartAngle - mTickMarkAngle) / (mTickMarkAngle + mTickMarkSpaceAngle));
+                    }else {
+                        mCurrentPosition = (int) ((360 - mTickMarkStartAngle + degree - mTickMarkAngle) / (mTickMarkAngle + mTickMarkSpaceAngle));
+                    }
+
                     notifyDataChanged();
 
                 }
@@ -394,7 +384,7 @@ public class TptDialView extends View {
     }
 
     /**
-     * 计算触摸点到原点的直线与三点钟方向的夹角
+     * 计算触摸点到原点的直线与原点的夹角
      * @param moveX 触摸点x坐标
      * @param moveY 触摸点y坐标
      * @param distance 触摸点与圆心的距离
@@ -405,7 +395,7 @@ public class TptDialView extends View {
         if (moveX >= getWidth() * 0.5 && moveY <= getHeight() * 0.5){
             //第一象限
             trigleValue = (moveX - getWidth() * 0.5f) / distance;
-            degree = 360 - (int) Math.round (Math.acos(trigleValue) * (180 / Math.PI));
+            degree = 270 + (int) Math.round (Math.asin(trigleValue) * (180 / Math.PI));
         }else if (moveX < getWidth() * 0.5 && moveY <= getHeight() * 0.5){
             //第二象限
             trigleValue = (getWidth() * 0.5f - moveX) / distance;
@@ -413,14 +403,11 @@ public class TptDialView extends View {
         }else if (moveX < getWidth() * 0.5 && moveY > getHeight() * 0.5){
             //第三象限
             trigleValue = (getWidth() * 0.5f - moveX) / distance;
-            degree = 180 - (int) Math.round (Math.acos(trigleValue) * (180 / Math.PI));
+            degree =  90 + (int) Math.round (Math.asin(trigleValue) * (180 / Math.PI));
         }else if (moveX >= getWidth() * 0.5 && moveY > getHeight() * 0.5){
             //第四象限
             trigleValue = (moveX - getWidth() * 0.5f ) / distance;
             degree = (int) Math.round (Math.acos(trigleValue) * (180 / Math.PI));
-            if (degree < mTickMarkStartAngle){
-                degree += 360;
-            }
         }
         return degree;
     }
@@ -431,6 +418,9 @@ public class TptDialView extends View {
      * @return
      */
     private boolean checkDialContainsPoint(float distance,int degree) {
+        if (mTickMarkEndAngle > 360 ){
+            return degree <= (mTickMarkEndAngle % 360) || degree >= mTickMarkStartAngle;
+        }
         return  distance > mInnerRadius && distance < getWidth() / 2 && (degree >= mTickMarkStartAngle && degree <= mTickMarkSweepAngle+mTickMarkStartAngle);
     }
 
@@ -464,6 +454,123 @@ public class TptDialView extends View {
     public interface OnSlideChangedListener{
         void onSlideChanged(int position,float value);
     }
+
+
+    /**
+     * 设置刻度盘开始角度
+     * @param angle
+     */
+    public void setDialStartAngle(int angle){
+        this.mTickMarkStartAngle = angle % 360;
+        mCurrentPosition = 0;
+        computeTickMarkCount();
+        notifyDataChanged();
+    }
+
+    /**
+     * 返回刻度盘开始角度
+     * @return
+     */
+    public int getDialStartAngle(){
+        return mTickMarkStartAngle;
+    }
+
+    /**
+     * 设置刻度盘扫过的角度
+     * @param angle
+     */
+    public void setDialSweepAngle(int angle){
+        mCurrentPosition = 0;
+        this.mTickMarkSweepAngle = angle;
+        computeTickMarkCount();
+        notifyDataChanged();
+    }
+
+    /**
+     * 返回刻度盘范围大小
+     * @return
+     */
+    public int getDialSweepAngle(){
+        return mTickMarkSweepAngle;
+    }
+
+    /**
+     * 刻度颜色变化的起始值
+     * @param r
+     * @param g
+     * @param b
+     */
+    public void setScaleStartColor(int r,int g,int b){
+        this.mTickMarkStartColor = Color.rgb(r,g,b);
+        notifyDataChanged();
+    }
+
+    /**
+     * 刻度颜色变化的结束值
+     * @param r
+     * @param g
+     * @param b
+     */
+    public void setScaleEndColor(int r,int g,int b){
+        this.mTickMarkEndColor = Color.rgb(r,g,b);
+        notifyDataChanged();
+    }
+
+    /**
+     * 返回刻度颜色变化的开始值
+     * @return
+     */
+    public int getScaleStartColor(){
+        return mTickMarkStartColor;
+    }
+
+    /**
+     * 返回刻度颜色变化的结束值
+     * @return
+     */
+    public int getScaleEndColor(){
+        return mTickMarkEndColor;
+    }
+
+
+    /**
+     * 设置刻度值
+     * @param minValue 最小值
+     * @param maxValue 最大值
+     */
+    public void setDialValue(float minValue,float maxValue){
+        this.mMinValue = minValue;
+        this.mMaxValue = maxValue;
+        checkDialValue();
+    }
+
+    /**
+     * 设置当前显示的刻度位置
+     * @param index
+     */
+    public void setCurPosition(int index){
+        mCurrentPosition = index;
+        notifyDataChanged();
+    }
+
+    /**
+     * 获取刻度最大值
+     * @return
+     */
+    public float getMaxValue(){
+        return mMaxValue;
+    }
+
+    /**
+     * 获取宽度最小值
+     * @return
+     */
+    public float getMinValue(){
+        return mMinValue;
+    }
+
+
+
 
     /**
      * 保存当前状态
