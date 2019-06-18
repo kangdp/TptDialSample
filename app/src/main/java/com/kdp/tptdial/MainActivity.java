@@ -23,33 +23,14 @@ public class MainActivity extends AppCompatActivity {
         tv_max = findViewById(R.id.tv_max);
         tv_min.setText(tptDialView.getMinValue()+"");
         tv_max.setText(tptDialView.getMaxValue()+"");
-        tptDialView.setOnPointChangedListener(new TptDialView.OnPointChangedListener() {
+        tptDialView.setOnSlideChangedListener(new TptDialView.OnSlideChangedListener() {
             @Override
-            public void onChanged(int position, float value) {
-//                Log.e(MainActivity.class.getSimpleName(), "onChanged: position = " + position  + "   value = " + value);
+            public void onSlideChanged(int position, float value) {
                 tvValue.setText("位置： " + position + "  数值为:   " +value);
             }
         });
 
 
 
-//        seekBar = findViewById(R.id.seekbar);
-//        seekBar.setMax(tptDialView.getMaxValue()-1);
-//        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-//            @Override
-//            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-//                tptDialView.setCurPosition(progress);
-//            }
-//
-//            @Override
-//            public void onStartTrackingTouch(SeekBar seekBar) {
-//
-//            }
-//
-//            @Override
-//            public void onStopTrackingTouch(SeekBar seekBar) {
-//
-//            }
-//        });
     }
 }

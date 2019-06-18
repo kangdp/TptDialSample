@@ -12,11 +12,11 @@
        android:layout_height="wrap_content"
        android:layout_centerInParent="true"
        app:CurPosition="0"
-       app:InnerRadius="100dp"
-       app:SelTickMarkHeight="45dp"
+       app:InnerRadius="200dp"
+       app:SelTickMarkHeight="70dp"
        app:TickMarkAngle="1"
        app:TickMarkEndColor="#12facc"
-       app:TickMarkHeight="25dp"
+       app:TickMarkHeight="40dp"
        app:TickMarkSpaceAngle="4"
        app:TickMarkStartAngle="135"
        app:TickMarkStartColor="#177ef7"
@@ -24,9 +24,9 @@
        app:DottedColor="#d2d2d2"
        app:MinValue="36.4"
        app:MaxValue="200"
-       app:ThumbRadius="5dp"
-       app:ThumbShadowRadius="2dp"
-       app:ThumbShadowColor="@android:color/holo_blue_light"
+       app:ThumbRadius="8dp"
+       app:ThumbShadowRadius="5dp"
+       app:ThumbShadowColor="@color/colorAccent"
        app:ThumbColor="#fff"/>
 
       <TextView

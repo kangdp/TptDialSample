@@ -9,9 +9,13 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PathEffect;
 import android.graphics.RectF;
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 
 /***
  * @author kdp
@@ -94,6 +98,7 @@ public class TptDialView extends View {
      */
     private RectF mDottedRectangle;
 
+
     /**
      * 当前刻度指针的位置 (介于 0 -> 总刻度数量 - 1)
      */
@@ -103,8 +108,11 @@ public class TptDialView extends View {
      */
     private float mMinValue,mMaxValue;//默认为刻度下标
     private float mAverageValue;//每个刻度的数值
-    private OnPointChangedListener onPointChangedListener;
+    private OnSlideChangedListener onSlideChangedListener;
     private Paint mPaint;
+
+    private boolean mSlidable = false;//是否可以继续滑动
+    float moveX=0,moveY=0;//触摸点坐标
 
     public TptDialView(Context context) {
         this(context,null);
@@ -267,7 +275,7 @@ public class TptDialView extends View {
      */
     public void setCurPosition(int index){
         mCurrentPosition = index;
-        invalidate();
+        notifyDataChanged();
     }
 
     public float getMaxValue(){
@@ -339,54 +347,76 @@ public class TptDialView extends View {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-       float downX = event.getX();
-       float downY = event.getY();
-        float distance = (float) Math.sqrt(Math.pow(Math.abs(downX - getWidth() * 0.5f),2) + Math.pow(Math.abs(downY - getHeight() * 0.5f),2));
-      if (checkDialContainsPoint(downX,downY,distance)){
 
-          //计算触摸点夹角
-         int degree = calculatePointAngle(downX,downY,distance);
-         //检测触摸角度是否在刻度盘的范围之内
-          if (checkDialContaonsPoint(degree)){
-              mCurrentPosition = (int) ((degree - mTickMarkStartAngle - mTickMarkAngle) / (mTickMarkAngle + mTickMarkSpaceAngle));
-              invalidate();
-              if (onPointChangedListener!=null){
-                   if (mCurrentPosition == 0){
-                       onPointChangedListener.onChanged(mCurrentPosition,mMinValue);
-                   }else {
-                       onPointChangedListener.onChanged(mCurrentPosition,mMinValue + (mCurrentPosition+1) * mAverageValue);
-                   }
-              }
-          }
-      }
+        switch (event.getAction()){
+            case MotionEvent.ACTION_DOWN:
+                mSlidable = true;
+            case MotionEvent.ACTION_MOVE:
+                moveX = event.getX();
+                moveY = event.getY();
+                float originDistance = calculateDistance(moveX,moveY);
+                int degree = calculatePointAngle(moveX,moveY,originDistance);
+                if (!checkDialContainsPoint(originDistance,degree)){
+                    mSlidable = false;
+                }
+                if (mSlidable) {
+                    //触摸点在刻度盘上的位置
+                    mCurrentPosition = (int) ((degree - mTickMarkStartAngle - mTickMarkAngle) / (mTickMarkAngle + mTickMarkSpaceAngle));
+                    notifyDataChanged();
+
+                }
+                break;
+        }
         return true;
     }
 
     /**
-     * 计算触摸点到原点的直线与三点中方向的夹角
-     * @param downX 触摸点x坐标
-     * @param downY 触摸点y坐标
+     * 通知View刷新
+     */
+    private void notifyDataChanged(){
+        invalidate();
+        if (onSlideChangedListener == null) return;
+        if (mCurrentPosition == 0){
+            onSlideChangedListener.onSlideChanged(mCurrentPosition,mMinValue);
+        }else {
+            onSlideChangedListener.onSlideChanged(mCurrentPosition,mMinValue + (mCurrentPosition+1) * mAverageValue);
+        }
+    }
+
+    /**
+     * 计算触摸点到原点的距离
+     * @param moveX
+     * @param moveY
+     * @return
+     */
+    private float calculateDistance(float moveX, float moveY){
+      return  (float) Math.sqrt(Math.pow(Math.abs(moveX - getWidth() * 0.5f),2) + Math.pow(Math.abs(moveY - getHeight() * 0.5f),2));
+    }
+
+    /**
+     * 计算触摸点到原点的直线与三点钟方向的夹角
+     * @param moveX 触摸点x坐标
+     * @param moveY 触摸点y坐标
      * @param distance 触摸点与圆心的距离
      */
-    private int calculatePointAngle(float downX, float downY,float distance) {
+    private int calculatePointAngle(float moveX, float moveY,float distance) {
         float trigleValue;
         int degree = 0;
-        if (downX >= getWidth() * 0.5 && downY <= getHeight() * 0.5){
+        if (moveX >= getWidth() * 0.5 && moveY <= getHeight() * 0.5){
             //第一象限
-            trigleValue = (downX - getWidth() * 0.5f) / distance;
+            trigleValue = (moveX - getWidth() * 0.5f) / distance;
             degree = 360 - (int) Math.round (Math.acos(trigleValue) * (180 / Math.PI));
-        }else if (downX < getWidth() * 0.5 && downY <= getHeight() * 0.5){
+        }else if (moveX < getWidth() * 0.5 && moveY <= getHeight() * 0.5){
             //第二象限
-            trigleValue = (getWidth() * 0.5f - downX) / distance;
+            trigleValue = (getWidth() * 0.5f - moveX) / distance;
             degree = 180 + (int) Math.round (Math.acos(trigleValue) * (180 / Math.PI));
-        }else if (downX < getWidth() * 0.5 && downY > getHeight() * 0.5){
+        }else if (moveX < getWidth() * 0.5 && moveY > getHeight() * 0.5){
             //第三象限
-            trigleValue = (getWidth() * 0.5f - downX) / distance;
+            trigleValue = (getWidth() * 0.5f - moveX) / distance;
             degree = 180 - (int) Math.round (Math.acos(trigleValue) * (180 / Math.PI));
-        }else if (downX >= getWidth() * 0.5 && downY > getHeight() * 0.5){
+        }else if (moveX >= getWidth() * 0.5 && moveY > getHeight() * 0.5){
             //第四象限
-            trigleValue = (downX - getWidth() * 0.5f ) / distance;
-
+            trigleValue = (moveX - getWidth() * 0.5f ) / distance;
             degree = (int) Math.round (Math.acos(trigleValue) * (180 / Math.PI));
             if (degree < mTickMarkStartAngle){
                 degree += 360;
@@ -396,22 +426,12 @@ public class TptDialView extends View {
     }
 
     /**
-     * 判断该触摸点是否在刻度盘的有效范围之内
-     *
-     */
-    private boolean checkDialContaonsPoint(int degree) {
-       return degree >= mTickMarkStartAngle && degree <= mTickMarkSweepAngle+mTickMarkStartAngle;
-    }
-
-    /**
-     * 检查触摸点是否在刻度盘上
-     * @param downX
-     * @param downY
+     * 检查触摸点是否在刻度上
      * @param distance
      * @return
      */
-    private boolean checkDialContainsPoint(float downX, float downY,float distance) {
-        return mSelRectangle.contains(downX,downY) && distance > mInnerRadius;
+    private boolean checkDialContainsPoint(float distance,int degree) {
+        return  distance > mInnerRadius && distance < getWidth() / 2 && (degree >= mTickMarkStartAngle && degree <= mTickMarkSweepAngle+mTickMarkStartAngle);
     }
 
     /**
@@ -424,6 +444,7 @@ public class TptDialView extends View {
         canvas.drawCircle(getWidth()/2F,getHeight()/2F,getWidth()/2f-mSelTickMarkHeight-mThumbRadius*2-mThumbShadowRadius,mPaint);
     }
 
+
     /**
      * 获取当前刻度颜色
      * @param index
@@ -433,12 +454,74 @@ public class TptDialView extends View {
     }
 
 
-    public void setOnPointChangedListener(OnPointChangedListener listener){
-        this.onPointChangedListener = listener;
+    public void setOnSlideChangedListener(OnSlideChangedListener listener){
+        this.onSlideChangedListener = listener;
     }
 
-    public interface OnPointChangedListener{
-        void onChanged(int position,float value);
+    /**
+     * 触摸滑动回调
+     */
+    public interface OnSlideChangedListener{
+        void onSlideChanged(int position,float value);
     }
 
+    /**
+     * 保存当前状态
+     * @return
+     */
+    @Override
+    protected Parcelable onSaveInstanceState() {
+        Parcelable parcelable = super.onSaveInstanceState();
+        SavedState savedState = new SavedState(parcelable);
+        savedState.mCurrentPosition = mCurrentPosition;
+        return savedState;
+    }
+
+    /**
+     * 恢复状态
+     * @param state
+     */
+    @Override
+    protected void onRestoreInstanceState(Parcelable state) {
+        SavedState savedState = (SavedState) state;
+        super.onRestoreInstanceState(savedState.getSuperState());
+        setCurPosition(savedState.mCurrentPosition);
+    }
+
+    /**
+     * 此类用来存储、恢复当前View的状态
+     */
+    static class SavedState extends BaseSavedState {
+        int mCurrentPosition;
+        SavedState(Parcel in) {
+            super(in);
+            mCurrentPosition = in.readInt();
+        }
+
+        SavedState(Parcelable superState) {
+            super(superState);
+        }
+        @Override
+        public void writeToParcel(Parcel out, int flags) {
+            super.writeToParcel(out, flags);
+            out.writeInt(mCurrentPosition);
+        }
+
+        public static final Parcelable.Creator<SavedState> CREATOR
+                = new Parcelable.ClassLoaderCreator<SavedState>() {
+            @Override
+            public SavedState createFromParcel(Parcel in) {
+                return new SavedState(in);
+            }
+            @Override
+            public SavedState createFromParcel(Parcel in, ClassLoader loader) {
+                return new SavedState(in);
+            }
+
+            @Override
+            public SavedState[] newArray(int size) {
+                return new SavedState[size];
+            }
+        };
+    }
 }
