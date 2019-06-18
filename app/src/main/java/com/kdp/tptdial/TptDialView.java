@@ -390,23 +390,19 @@ public class TptDialView extends View {
      * @param distance 触摸点与圆心的距离
      */
     private int calculatePointAngle(float moveX, float moveY,float distance) {
-        float trigleValue;
+        float trigleValue = Math.abs((moveX - getWidth() * 0.5f) / distance);
         int degree = 0;
         if (moveX >= getWidth() * 0.5 && moveY <= getHeight() * 0.5){
             //第一象限
-            trigleValue = (moveX - getWidth() * 0.5f) / distance;
             degree = 270 + (int) Math.round (Math.asin(trigleValue) * (180 / Math.PI));
         }else if (moveX < getWidth() * 0.5 && moveY <= getHeight() * 0.5){
             //第二象限
-            trigleValue = (getWidth() * 0.5f - moveX) / distance;
             degree = 180 + (int) Math.round (Math.acos(trigleValue) * (180 / Math.PI));
         }else if (moveX < getWidth() * 0.5 && moveY > getHeight() * 0.5){
             //第三象限
-            trigleValue = (getWidth() * 0.5f - moveX) / distance;
             degree =  90 + (int) Math.round (Math.asin(trigleValue) * (180 / Math.PI));
         }else if (moveX >= getWidth() * 0.5 && moveY > getHeight() * 0.5){
             //第四象限
-            trigleValue = (moveX - getWidth() * 0.5f ) / distance;
             degree = (int) Math.round (Math.acos(trigleValue) * (180 / Math.PI));
         }
         return degree;
