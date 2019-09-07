@@ -351,11 +351,12 @@ public class TptDialView extends View {
                     }else {
                         mCurrentPosition = (int) ((360 - mTickMarkStartAngle + degree - mTickMarkAngle) / (mTickMarkAngle + mTickMarkSpaceAngle));
                     }
-
                     notifyDataChanged();
-
                 }
                 break;
+            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_CANCEL:
+                mSlidable = false;
         }
         return true;
     }
@@ -414,10 +415,14 @@ public class TptDialView extends View {
      * @return
      */
     private boolean checkDialContainsPoint(float distance,int degree) {
+
+        //是否在园内
+        if (distance <= mInnerRadius || distance > getWidth() * 0.5f) return false;
+
         if (mTickMarkEndAngle > 360 ){
             return degree <= (mTickMarkEndAngle % 360) || degree >= mTickMarkStartAngle;
         }
-        return  distance > mInnerRadius && distance < getWidth() / 2 && (degree >= mTickMarkStartAngle && degree <= mTickMarkSweepAngle+mTickMarkStartAngle);
+        return  degree >= mTickMarkStartAngle && degree <= mTickMarkSweepAngle+mTickMarkStartAngle;
     }
 
     /**
